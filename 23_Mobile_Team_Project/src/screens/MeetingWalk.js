@@ -1,67 +1,106 @@
-// 사용자의 현재 위치를 지도에 표시하는 메인 화면
-// useState와 useEffect를 사용하여 사용자의 위치를 상태로 관리하고, 위치가 변경될 때마다 지도를 업데이트
-//위치 서비스를 사용하여 사용자의 현재 위치를 받아오고, 이를 지도에 표시하는 기능 수행
-//사용자의 위치에 대한 권한 요청, 현재 위치의 좌표 가져오기, 해당 위치에 마커 표시 과정 포함
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text } from 'react-native';
-import MapView from 'react-native-maps'; // 지도를 표시하기 위한 컴포넌트
-import CustomMarker from '../components/CustomMarker'; // 사용자 정의 마커 컴포넌트
-import * as Location from 'expo-location'; // Expo 위치 서비스 API
+import { View, StyleSheet, Text, Button, Dimensions } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
+import * as Location from 'expo-location';
+import StartWalkBtn from '../components/Btn/StartWalkBtn';
+import MeetingRequestDialogs from '../components/Dialog/MeetingRequestDialog';
 
 const MeetingWalk = () => {
-    // 사용자의 현재 위치 상태 관리
     const [currentPosition, setCurrentPosition] = useState(null);
+    const [errorMsg, setErrorMsg] = useState(null);
+    const [isWalking, setIsWalking] = useState(false);
 
-    // 컴포넌트가 마운트될 때 위치 정보를 가져오는 useEffect 훅 사용
     useEffect(() => {
-        // 사용자 위치 접근 권한을 요청하고 위치 정보 가져오는 함수
-        const requestLocationPermission = async () => {
+        (async () => {
             let { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
-                console.log('Permission to access location was denied');
+                setErrorMsg('Permission to access location was denied');
                 return;
             }
 
-            // 현재 위치 정보를 가져와서 상태 업데이트
             let location = await Location.getCurrentPositionAsync({});
             setCurrentPosition({
                 latitude: location.coords.latitude,
                 longitude: location.coords.longitude,
-                latitudeDelta: 0.0922, // 지도의 위도 범위
-                longitudeDelta: 0.0421, // 지도의 경도 범위
+                latitudeDelta: 0.005,
+                longitudeDelta: 0.005,
             });
-        };
-
-        // 위치 권한 요청 및 위치 정보 업데이트 함수 실행
-        requestLocationPermission();
+        })();
     }, []);
 
-    // UI 렌더링
+    const handleStartStopWalk = () => {
+        setIsWalking(!isWalking);
+    };
+
+    // 버튼 핸들러 함수 (현재는 빈 기능)
+    const handleRequestMeet = () => {
+        MeetingRequestDialogs.showMeetingRequestDialog("***");
+    };
+    const handleAcceptReject = () => {
+        MeetingRequestDialogs.showRequestDecisionDialog("***");
+    };
+
     return (
         <View style={styles.container}>
-            {currentPosition && (
-                // 현재 위치가 있을 경우 MapView를 렌더링, 사용자 정의 마커 표시
-                <MapView
-                    style={styles.map}
-                    initialRegion={currentPosition}
-                >
-                    <CustomMarker coordinate={currentPosition} />
-                </MapView>
-            )}
+            <View style={styles.titleContainer}>
+                <Text style={styles.title}>산책 중 만남</Text>
+            </View>
+            <View style={styles.contentContainer}>
+                {currentPosition ? (
+                    <MapView
+                        style={styles.map}
+                        initialRegion={currentPosition}
+                    >
+                        <Marker coordinate={currentPosition} />
+                    </MapView>
+                ) : (
+                    <Text>{errorMsg ? errorMsg : '위치 정보를 불러오는 중...'}</Text>
+                )}
+                <StartWalkBtn onPress={handleStartStopWalk} title={isWalking ? '산책 중지' : '산책 시작'} />
+                <View style={styles.meetButtonContainer}>
+                    <Button title="만남요청 대화상자" onPress={handleRequestMeet} />
+                    <Button title="수락,거절 대화상자" onPress={handleAcceptReject} />
+                    
+                </View>
+            </View>
         </View>
     );
 };
 
-// 스타일 정의
+const screen = Dimensions.get('window');
+const mapSize = screen.width;
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: 'center',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+    },
+    titleContainer: {
+        width: '90%',
+        padding: 60,
         alignItems: 'center',
     },
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+    },
+    contentContainer: {
+        flex: 1,
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        paddingTop: screen.height / 50,
+    },
     map: {
+        width: mapSize,
+        height: mapSize,
+        marginBottom: 20,
+    },
+    meetButtonContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
         width: '100%',
-        height: '100%',
+        padding: 20,
     },
 });
 
