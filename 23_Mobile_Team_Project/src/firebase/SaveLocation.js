@@ -8,13 +8,15 @@ const saveUserLocation = async (latitude, longitude) => {
 
     try {
         await setDoc(doc(db, "usersLocation", userId), {
-            latitude,//위도
-            longitude,//경도
+            latitude, //위도
+            longitude, //경도
             timestamp: new Date().toISOString() // 업데이트 시간(현재시간)
         });
         console.log("사용자 위치 저장 완료"); // 성공 메시지 출력
+        return userId; // 여기에서 userId 반환
     } catch (error) {
         console.error("Error updating location: ", error);
+        return null; // 오류 발생 시 null 반환
     }
 };
 
