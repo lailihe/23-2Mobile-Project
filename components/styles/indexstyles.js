@@ -37,7 +37,12 @@ const styles = StyleSheet.create({
     elevation: 4,
     transform: [{ translateX: -28 }], // 버튼의 중심을 정확하게 가운데로 맞춤
   },
- 
+  centeredView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 22,
+  },
   input: {
     height: 40,
     margin: 12,
@@ -100,18 +105,55 @@ inputText: {
   color: 'black', // 여기서 색상은 원하는 대로 조정할 수 있습니다.
 },
 
+centeredView: {
+  flex: 1,
+  justifyContent: "center",
+  alignItems: "center",
+  backgroundColor: "rgba(0, 0, 0, 0.5)", // 반투명 배경
+},
+modalView: {
+  margin: 20,
+  backgroundColor: "white",
+  borderRadius: 20,
+  padding: 35,
+  alignItems: "center",
+  shadowColor: "#000",
+  shadowOffset: {
+    width: 0,
+    height: 2
+  },
+  shadowOpacity: 0.25,
+  shadowRadius: 4,
+  elevation: 5
+},
+imageContainer: {
+  marginBottom: 15,
+},
 profileImages: {
   width: 150,
   height: 150,
   borderRadius: 75, // 원형 이미지
 },
-
+noImageText: {
+  color: "#888",
+  fontSize: 18,
+},
 infoSection: {
   flexDirection: "row",
   alignItems: "center",
   marginBottom: 10,
 },
-
+infoText: {
+  marginLeft: 10,
+},
+infoTitle: {
+  fontWeight: "bold",
+  fontSize: 16,
+},
+infoContent: {
+  fontSize: 15,
+  color: "#555",
+},
 // '닫기' 버튼 스타일
 closeButton: {
   backgroundColor: "#2196F3",
@@ -204,55 +246,34 @@ inputTouchable: {
   borderRadius: 10,
   padding: 10,
   backgroundColor: '#fffcf7',
-  width: 200,
+  width: 280,
 },
-centeredView: {
-  flex: 1,
-  justifyContent: 'center',
-  alignItems: 'center',
-  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+walkApplicationButtons: {
+  flexDirection: 'row', // 버튼들을 가로로 배열
+  justifyContent: 'space-around', // 버튼 사이의 간격을 동일하게 조정
+  marginTop: 10, // 버튼과 상단 텍스트 사이의 여백
+  marginBottom: 10, // 버튼과 하단 컴포넌트 사이의 여백
 },
-modalView: {
-  margin: 20,
-  backgroundColor: 'white',
-  borderRadius: 20,
-  padding: 35,
-  alignItems: 'center',
-  shadowColor: '#000',
-  shadowOffset: {
-    width: 0,
-    height: 2,
-  },
-  shadowOpacity: 0.25,
-  shadowRadius: 4,
-  elevation: 5,
+textInput: {
+  height: 40,
+  borderColor: 'gray',
+  borderWidth: 1,
+  margin: 10,
+  paddingHorizontal: 10,
 },
-imageContainer: {
-  marginBottom: 15,
-
-},
-noImageText: {
+neighborhoodText: {
   fontSize: 16,
-  color: '#ccc',
-},
-infoSection: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  marginBottom: 10,
-  width: '100%',
-},
-infoText: {
-  marginLeft: 10,
-},
-infoTitle: {
-  fontWeight: 'bold',
   color: '#333',
-  fontSize: 16,
+  // 추가적인 스타일링
 },
-infoContent: {
-  color: '#555',
-  fontSize: 14,
+input: {
+  height: 40,
+  margin: 12,
+  borderWidth: 1,
+  padding: 10,
+  // 추가적인 스타일링
 },
+
 });
 
 export default styles

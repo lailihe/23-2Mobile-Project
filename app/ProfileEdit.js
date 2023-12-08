@@ -5,16 +5,14 @@ import {
   Text,
   TextInput,
   Image,
-  Button,
   TouchableOpacity,
-  Platform,
   ScrollView,
-  KeyboardAvoidingView,
   TouchableWithoutFeedback,
   Keyboard,
+  Linking 
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import DateTimePicker from "@react-native-community/datetimepicker";
+// import DateTimePicker from "@react-native-community/datetimepicker";
 import { db } from "./firebase/firebaseConfig"; // 실제 경로로 교체하세요
 import {
   getStorage,
@@ -24,12 +22,11 @@ import {
   deleteObject,
 } from "firebase/storage";
 import { collection, doc, getDocs, setDoc } from "firebase/firestore";
-import { useRouter } from "expo-router";
+import { useRouter, useGlobalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons"; // 아이콘 사용을 위한 임포트
 import FontAwesome from "react-native-vector-icons/FontAwesome";
 import uuid from "react-native-uuid";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
 import styles from "../components/styles/ProfileEditstyle";
 
 const ProfileEdit = () => {
@@ -41,50 +38,29 @@ const ProfileEdit = () => {
     fetchProfileData();
   }, []);
 
+  const { type: urlType } = useGlobalSearchParams();
+  const [type, setType] = useState(urlType);
+  useEffect(() => {
+    // URL에서 가져온 type 값이 변경될 때마다 type 상태 업데이트
+    setType(urlType);
+  }, [urlType]);
+
   // 상태 훅들
   const [name, setName] = useState("");
-  const [type, setType] = useState("");
   const [gender, setGender] = useState("");
   const [image, setImage] = useState(null);
-  const [spayedOrNeutered, setSpayedOrNeutered] = useState("no"); // 중성화 여부
-  const [vaccinated, setVaccinated] = useState("no"); // 예방접종 여부
+  const [spayedOrNeutered, setSpayedOrNeutered] = useState("미완료"); // 중성화 여부
+  const [vaccinated, setVaccinated] = useState("미완료"); // 예방접종 여부
   const [characteristics, setCharacteristics] = useState(""); // 성격 및 특징
-
-  const [birthYear, setBirthYear] = useState("");
-  const [birthMonth, setBirthMonth] = useState("");
-  const [birthDay, setBirthDay] = useState("");
-
-  const [date, setDate] = useState(new Date());
-  const [mode, setMode] = useState("date");
-  const [show, setShow] = useState(false);
+  const [date, setDate] = useState("");"" // 기본 날짜 설정
+  const [number, setNumber] = useState("");
   const [selectedImageUri, setSelectedImageUri] = useState(null); // 선택된 이미지 URI 상태
 
   // 키보드를 숨기는 함수
   const dismissKeyboard = () => Keyboard.dismiss();
 
-  // 날짜 선택 핸들러 업데이트
-  const onChange = (event, selectedDate) => {
-    const currentDate = selectedDate || date;
-    setShow(Platform.OS === "ios");
-    setDate(currentDate);
-
-    // 날짜를 'YYYY년 MM월 DD일' 형식으로 변환하여 상태 업데이트
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth() + 1; // 월은 0부터 시작하므로 +1
-    const day = currentDate.getDate();
-
-    setBirthYear(year.toString());
-    setBirthMonth(month.toString());
-    setBirthDay(day.toString());
-  };
-
-  const showMode = (currentMode) => {
-    setShow(true);
-    setMode(currentMode);
-  };
-
-  const showDatepicker = () => {
-    showMode("date");
+  const navigateToBreedSelection = () => {
+    router.push("/Search"); // 'select-breed'는 견종 선택 스크린의 라우트 경로여야 합니다.
   };
 
   const fetchProfileData = async () => {
@@ -96,16 +72,17 @@ const ProfileEdit = () => {
       if (savedUUID) {
         const querySnapshot = await getDocs(collection(db, "profiles"));
         querySnapshot.forEach((doc) => {
-          if (doc.data().uniqueId === savedUUID) {
+          if (doc.data().userUUID === savedUUID) {
             const data = doc.data();
 
             setName(data.name);
             setType(data.type);
             setGender(data.gender);
             setImage(data.imageUrl);
-            setBirthYear(data.birthYear); // 이 부분은 실제 데이터 형식에 따라 다를 수 있습니다.
+            setDate(data.date); // 이 부분은 실제 데이터 형식에 따라 다를 수 있습니다.
             setSpayedOrNeutered(data.spayedOrNeutered);
             setVaccinated(data.vaccinated);
+            setNumber(data.number);
             setCharacteristics(data.characteristics);
           }
         });
@@ -155,64 +132,68 @@ const ProfileEdit = () => {
   };
 
   const handleSave = async () => {
+    if (!number) {
+      alert("반려동물 등록번호를 입력해주세요.");
+      return;
+    }
+    
     try {
       // 이전 이미지 URL이 있는지 확인
-      let oldImageUrl = '';
+      let oldImageUrl = "";
       const savedUUID = await AsyncStorage.getItem("userUUID");
       if (savedUUID) {
         const querySnapshot = await getDocs(collection(db, "profiles"));
         querySnapshot.forEach((doc) => {
-          if (doc.data().uniqueId === savedUUID) {
+          if (doc.data().userUUID === savedUUID) {
             oldImageUrl = doc.data().imageUrl;
           }
         });
       }
-  
-      // 이전 이미지를 삭제
-      if (oldImageUrl) {
-        const storage = getStorage();
-        const oldImageRef = storageRef(storage, oldImageUrl);
-  
-        await deleteObject(oldImageRef);
-      }
-  
+
+
+
       // 새 이미지 업로드
       if (selectedImageUri) {
         const imageUrlResult = await handleUpload(selectedImageUri);
-  
+
         if (!imageUrlResult) {
           // 이미지 업로드에 실패하면 중단
           return;
         }
 
-        const formattedDate = `${date.getFullYear()}년 ${
-          date.getMonth() + 1
-        }월 ${date.getDate()}일`;
+        // 이전 이미지를 삭제
+      if (oldImageUrl) {
+        const storage = getStorage();
+        const oldImageRef = storageRef(storage, oldImageUrl);
+
+        await deleteObject(oldImageRef);
+      }
 
         // 고유 식별자 생성 (예: UUID)
-        let uniqueId;
+        let userUUID;
         const savedUUID = await AsyncStorage.getItem("userUUID");
         if (savedUUID) {
-          uniqueId = savedUUID;
+          userUUID = savedUUID;
         } else {
-          uniqueId = uuid.v4();
+          userUUID = uuid.v4();
         }
 
         // 프로필 정보를 Firestore에 저장
-        await setDoc(doc(db, "profiles", uniqueId), {
-          uniqueId: uniqueId, // 고유 식별자 저장
+        await setDoc(doc(db, "profiles", userUUID), {
+          userUUID: userUUID, // 고유 식별자 저장
           name: name,
           type: type,
           gender: gender,
           imageUrl: imageUrlResult.imageUrl, // 이미지 URL을 저장
-          birthdate: formattedDate,
+          date: date,
           spayedOrNeutered: spayedOrNeutered,
           vaccinated: vaccinated,
+          number: number,
           characteristics: characteristics,
         });
 
         // UUID를 AsyncStorage에 저장
-        await AsyncStorage.setItem("userUUID", uniqueId);
+        await AsyncStorage.setItem("userUUID", userUUID);
 
         console.log("프로필 저장됨!");
         alert("프로필이 저장되었습니다!");
@@ -223,36 +204,37 @@ const ProfileEdit = () => {
         });
       } else {
         // 이미지를 선택하지 않은 경우, imageUrlResult를 빈 문자열로 설정
-        const imageUrlResult = { imageUrl: "" };
+        const imageUrlResult = { imageUrl: image };
 
-        const formattedDate = `${date.getFullYear()}년 ${
-          date.getMonth() + 1
-        }월 ${date.getDate()}일`;
+        // const formattedDate = `${date.getFullYear()}년 ${
+        //   date.getMonth() + 1
+        // }월 ${date.getDate()}일`;
 
         // 고유 식별자 생성 (예: UUID)
-        let uniqueId;
+        let userUUID;
         const savedUUID = await AsyncStorage.getItem("userUUID");
         if (savedUUID) {
-          uniqueId = savedUUID;
+          userUUID = savedUUID;
         } else {
-          uniqueId = uuid.v4();
+          userUUID = uuid.v4();
         }
 
         // 프로필 정보를 Firestore에 저장
-        await setDoc(doc(db, "profiles", uniqueId), {
-          uniqueId: uniqueId, // 고유 식별자 저장
+        await setDoc(doc(db, "profiles", userUUID), {
+          userUUID: userUUID, // 고유 식별자 저장
           name: name,
           type: type,
           gender: gender,
           imageUrl: imageUrlResult.imageUrl, // 이미지 URL을 저장
-          birthdate: formattedDate,
+          date: date,
           spayedOrNeutered: spayedOrNeutered,
           vaccinated: vaccinated,
+          number: number,
           characteristics: characteristics,
         });
 
         // UUID를 AsyncStorage에 저장
-        await AsyncStorage.setItem("userUUID", uniqueId);
+        await AsyncStorage.setItem("userUUID", userUUID);
 
         console.log("프로필 저장됨!");
         alert("프로필이 저장되었습니다!");
@@ -260,16 +242,6 @@ const ProfileEdit = () => {
         // 프로필 뷰로 이동
         router.push({
           pathname: `/ProfileView`,
-          params: {
-            name: name,
-            type: type,
-            gender: gender,
-            imageUrl: imageUrlResult.imageUrl, // 이미지 URL을 전달
-            birthdate: formattedDate,
-            spayedOrNeutered: spayedOrNeutered,
-            vaccinated: vaccinated,
-            characteristics: characteristics,
-          },
         });
       }
     } catch (error) {
@@ -290,13 +262,21 @@ const ProfileEdit = () => {
     return true;
   };
 
+  const openExternalLink = () => {
+    const url = "https://www.animal.go.kr/front/awtis/record/recordConfirmList.do?menuNo=2000000011"; // 여기에 원하는 URL을 입력하세요
+    Linking.canOpenURL(url).then(supported => {
+      if (supported) {
+        Linking.openURL(url);
+      } else {
+        console.log("해당 URL을 열 수 없습니다:", url);
+      }
+    });
+  };
+
   return (
     <TouchableWithoutFeedback onPress={dismissKeyboard}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <ScrollView>
+      <ScrollView>
+        
           <View style={styles.container}>
             <TouchableOpacity onPress={pickImage} style={styles.imagePicker}>
               {image ? (
@@ -306,140 +286,150 @@ const ProfileEdit = () => {
               )}
             </TouchableOpacity>
 
-            <View style={styles.action}>
-              <FontAwesome name="user-o" color="#4fc3f7" size={20} />
-              <TextInput
-                placeholder="반려동물 이름"
-                placeholderTextColor="#666666"
-                autoCorrect={false}
-                value={name}
-                onChangeText={setName}
-                style={styles.input} // 여기서 styles.input은 infoContent와 유사한 스타일로 설정
-              />
-            </View>
+          <View style={styles.action}>
+            <FontAwesome name="paw" color="#4fc3f7" size={24} />
+            <TextInput
+              placeholder="반려동물 이름"
+              placeholderTextColor="#666666"
+              autoCorrect={false}
+              value={name}
+              onChangeText={setName}
+              style={styles.input} // 여기서 styles.input은 infoContent와 유사한 스타일로 설정
+            />
+          </View>
+          
 
-            <View style={styles.action}>
-              <Ionicons name="paw" size={24} color="#4fc3f7" />
-              <TextInput
-                placeholder="반려견 견종"
-                placeholderTextColor="#666666"
-                autoCorrect={false}
-                value={type}
-                onChangeText={setType}
-                style={styles.input}
-              />
-            </View>
+          <View style={styles.action}>
+            <Ionicons name="paw" size={24} color="#4fc3f7" />
+            <TouchableOpacity
+              onPress={navigateToBreedSelection}
+              style={[styles.input, styles.inputTouchable]}
+            >
+              <Text style={styles.inputText}>{type || "반려견 견종 선택"}</Text>
+            </TouchableOpacity>
+          </View>
 
-            <View style={styles.action}>
-              <Ionicons name="male-female" size={24} color="#4fc3f7" />
+          <View style={styles.action}>
+            <Ionicons name="male-female" size={24} color="#4fc3f7" />
+            <View style={styles.buttonGroup}>
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  gender === "남아" ? styles.selected : null,
+                ]}
+                onPress={() => setGender("남아")}
+              >
+                <Text style={styles.buttonText}>남아</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  gender === "여아" ? styles.selected : null,
+                ]}
+                onPress={() => setGender("여아")}
+              >
+                <Text style={styles.buttonText}>여아</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.action}>
+            <Ionicons name="calendar" size={24} color="#4fc3f7" />
+            <TextInput
+              placeholder="생년월일"
+              placeholderTextColor="#666666"
+              autoCorrect={false}
+              value={date}
+              onChangeText={setDate}
+              style={styles.input}
+            />
+          </View>
+
+          <View style={styles.action}>
+      <TouchableOpacity onPress={openExternalLink}>
+        <Ionicons name="hardware-chip-outline" size={24} color="#4fc3f7" />
+      </TouchableOpacity>
+      <TextInput
+        placeholder="<--- 모르면 터치 반려동물 등록번호 "
+        placeholderTextColor="#666666"
+        autoCorrect={false}
+        value={number}
+        onChangeText={setNumber}
+        style={styles.input}
+      />
+    </View>
+
+          <View style={styles.action}>
+            {/* 중성화 여부 선택 */}
+            <View style={styles.switchContainer}>
+              <Ionicons name="medkit" size={24} color="#4fc3f7" />
+              <Text>중성화</Text>
               <View style={styles.buttonGroup}>
                 <TouchableOpacity
                   style={[
                     styles.button,
-                    gender === "male" ? styles.selected : null,
+                    spayedOrNeutered === "완료" ? styles.selected : null,
                   ]}
-                  onPress={() => setGender("male")}
+                  onPress={() => setSpayedOrNeutered("완료")}
                 >
-                  <Text style={styles.buttonText}>남아</Text>
+                  <Text style={styles.buttonText}>예</Text>
                 </TouchableOpacity>
-
                 <TouchableOpacity
                   style={[
                     styles.button,
-                    gender === "female" ? styles.selected : null,
+                    spayedOrNeutered === "미완료" ? styles.selected : null,
                   ]}
-                  onPress={() => setGender("female")}
+                  onPress={() => setSpayedOrNeutered("미완료")}
                 >
-                  <Text style={styles.buttonText}>여아</Text>
+                  <Text style={styles.buttonText}>아니요</Text>
                 </TouchableOpacity>
               </View>
             </View>
-
-            <View style={styles.action}>
-              <Ionicons name="calendar" size={24} color="#4fc3f7" />
-              <View style={styles.dateContainer}>
-                <Button onPress={showDatepicker} title="날짜 선택" />
-              </View>
-              {show && (
-                <DateTimePicker
-                  testID="dateTimePicker"
-                  value={date}
-                  mode={mode}
-                  is24Hour={true}
-                  display="default"
-                  onChange={onChange}
-                />
-              )}
-            </View>
-            <View style={styles.action}>
-              {/* 중성화 여부 선택 */}
-              <View style={styles.switchContainer}>
-                <Ionicons name="medkit" size={24} color="#4fc3f7" />
-                <Text>중성화</Text>
-                <View style={styles.buttonGroup}>
-                  <TouchableOpacity
-                    style={[
-                      styles.button,
-                      spayedOrNeutered === "yes" ? styles.selected : null,
-                    ]}
-                    onPress={() => setSpayedOrNeutered("yes")}
-                  >
-                    <Text style={styles.buttonText}>예</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.button,
-                      spayedOrNeutered === "no" ? styles.selected : null,
-                    ]}
-                    onPress={() => setSpayedOrNeutered("no")}
-                  >
-                    <Text style={styles.buttonText}>아니요</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-            <View style={styles.action}>
-              {/* 예방접종 여부 선택 */}
-              <Ionicons name="shield-checkmark" size={24} color="#4fc3f7" />
-              <Text>예방접종</Text>
-              <View style={styles.switchContainer}>
-                <View style={styles.buttonGroup}>
-                  <TouchableOpacity
-                    style={[
-                      styles.button,
-                      vaccinated === "yes" ? styles.selected : null,
-                    ]}
-                    onPress={() => setVaccinated("yes")}
-                  >
-                    <Text style={styles.buttonText}>예</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.button,
-                      vaccinated === "no" ? styles.selected : null,
-                    ]}
-                    onPress={() => setVaccinated("no")}
-                  >
-                    <Text style={styles.buttonText}>아니요</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-            {/* 성격 및 특징 입력 필드 */}
-            <Text>성격 및 특징</Text>
-            <TextInput
-              value={characteristics}
-              onChangeText={setCharacteristics}
-              style={styles.multilineInput}
-              multiline
-              numberOfLines={4}
-              placeholder="성격, 습관, 좋아하는 것 등"
-            />
-            {/* 저장 버튼 */}
-            <Button title="저장하기" onPress={handleSave} />
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          <View style={styles.action}>
+            {/* 예방접종 여부 선택 */}
+            <Ionicons name="shield-checkmark" size={24} color="#4fc3f7" />
+            <Text>예방접종</Text>
+            <View style={styles.switchContainer}>
+              <View style={styles.buttonGroup}>
+                <TouchableOpacity
+                  style={[
+                    styles.button,
+                    vaccinated === "완료" ? styles.selected : null,
+                  ]}
+                  onPress={() => setVaccinated("완료")}
+                >
+                  <Text style={styles.buttonText}>예</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.button,
+                    vaccinated === "미완료" ? styles.selected : null,
+                  ]}
+                  onPress={() => setVaccinated("미완료")}
+                >
+                  <Text style={styles.buttonText}>아니요</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+          {/* 성격 및 특징 입력 필드 */}
+          <Text>성격 및 특징</Text>
+          <TextInput
+            value={characteristics}
+            onChangeText={setCharacteristics}
+            style={styles.multilineInput}
+            multiline
+            numberOfLines={4}
+            placeholder="성격, 습관, 좋아하는 것 등"
+          />
+          {/* 저장 버튼 */}
+          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+            <Text style={styles.saveButtonText}>프로필 저장</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </TouchableWithoutFeedback>
   );
 };

@@ -10,7 +10,8 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons"; // 아이콘 사용을 위한 임포트
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { collection, getDocs, doc, deleteDoc } from "firebase/firestore";
+import { collection, getDocs, doc, deleteDoc,  getDoc} from "firebase/firestore";
+import { getStorage, ref as storageRef, deleteObject } from "firebase/storage";
 import { db } from "../firebase/firebaseConfig"; // 실제 경로로 교체하세요
 import styles from "../../components/styles/ProfileViewstyle";
 const ProfileView = () => {
@@ -20,10 +21,11 @@ const ProfileView = () => {
     const [type, setType] = useState("");
     const [gender, setGender] = useState("");
     const [image, setImage] = useState(null);
-    const [spayedOrNeutered, setSpayedOrNeutered] = useState("no"); // 중성화 여부
-    const [vaccinated, setVaccinated] = useState("no"); // 예방접종 여부
+    const [spayedOrNeutered, setSpayedOrNeutered] = useState("미완료"); // 중성화 여부
+    const [vaccinated, setVaccinated] = useState("미완료"); // 예방접종 여부
     const [characteristics, setCharacteristics] = useState(""); // 성격 및 특징
-    const [birthdate, setBirthdate] = useState("");
+    const [date, setDate] = useState("");
+    const [number, setNumber] = useState("");
     const [refreshing, setRefreshing] = useState(false); // 새로고침 상태를 관리하는 변수
 
     const onRefresh = () => {
@@ -42,16 +44,17 @@ const ProfileView = () => {
             if (savedUUID) {
                 const querySnapshot = await getDocs(collection(db, "profiles"));
                 querySnapshot.forEach((doc) => {
-                    if (doc.data().uniqueId === savedUUID) {
+                    if (doc.data().userUUID === savedUUID) {
                         const data = doc.data();
                         //
                         setName(data.name);
                         setType(data.type);
                         setGender(data.gender);
                         setImage(data.imageUrl);
-                        setBirthdate(data.birthdate); // 데이터베이스에 저장되어 있는 date 값 변수명과 같게
+                        setDate(data.date); // 데이터베이스에 저장되어 있는 date 값 변수명과 같게
                         setSpayedOrNeutered(data.spayedOrNeutered);
                         setVaccinated(data.vaccinated);
+                        setNumber(data.number);
                         setCharacteristics(data.characteristics);
                     }
                 });
@@ -83,12 +86,26 @@ const ProfileView = () => {
         try {
             const savedUUID = await AsyncStorage.getItem("userUUID");
             if (savedUUID) {
+                // Firestore에서 프로필 조회 및 이미지 URL 가져오기
                 const docRef = doc(db, "profiles", savedUUID);
-                await deleteDoc(docRef);
-
-                console.log("프로필이 삭제되었습니다.");
-                alert("프로필이 삭제되었습니다.");
-                // 추가 작업 (예: 홈 화면으로 이동)
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const imageUrl = docSnap.data().imageUrl;
+    
+                    // Firebase 스토리지에서 이미지 삭제
+                    if (imageUrl) {
+                        const storage = getStorage();
+                        const imageRef = storageRef(storage, imageUrl);
+                        await deleteObject(imageRef);
+                    }
+    
+                    // Firestore에서 프로필 삭제
+                    await deleteDoc(docRef);
+    
+                    console.log("프로필이 삭제되었습니다.");
+                    alert("프로필이 삭제되었습니다.");
+                    // 추가 작업 (예: 홈 화면으로 이동)
+                }
             }
         } catch (error) {
             console.error("프로필 삭제 중 오류 발생: ", error);
@@ -144,7 +161,15 @@ const ProfileView = () => {
                     <Ionicons name="calendar" size={24} color="#4fc3f7" />
                     <View style={styles.infoText}>
                         <Text style={styles.infoTitle}>생년월일</Text>
-                        <Text style={styles.infoContent}>{birthdate}</Text>
+                        <Text style={styles.infoContent}>{date}</Text>
+                    </View>
+                </View>
+
+                <View style={styles.infoSection}>
+                    <Ionicons name="hardware-chip-outline" size={24} color="#4fc3f7" /> 
+                     <View style={styles.infoText}>
+                        <Text style={styles.infoTitle}>반려동물 등록번호</Text>
+                        <Text style={styles.infoContent}>{number}</Text>
                     </View>
                 </View>
 

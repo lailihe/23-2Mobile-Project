@@ -11,13 +11,13 @@ import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyAPf3xEzoHNLuUkaUfZ8XXEqtWzcjzcEuY",
-  authDomain: "petmeeting-ef249.firebaseapp.com",
-  projectId: "petmeeting-ef249",
-  storageBucket: "petmeeting-ef249.appspot.com",
-  messagingSenderId: "928625243035",
-  appId: "1:928625243035:web:6c03d9d1fdfad835b4673e",
-  measurementId: "G-B11VK2KNZQ"
+  apiKey: "AIzaSyBg_iDUJHUZOI2y6LdXXv_dlH6NSAaV0Hc",
+  authDomain: "pet-meeting-61c0d.firebaseapp.com",
+  projectId: "pet-meeting-61c0d",
+  storageBucket: "pet-meeting-61c0d.appspot.com",
+  messagingSenderId: "1077430799401",
+  appId: "1:1077430799401:web:3c94b23abdafcb8b512038",
+  measurementId: "G-0EXV3RNK4Y"
 };
 
 // Firebase 앱 초기화
