@@ -6,14 +6,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-around",
     padding: 10,
   },
-  action: {
-    flexDirection: "row",
-    marginTop: 10,
-    marginBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f2f2f2",
-    paddingBottom: 5,
-  },
+  
   button: {
     backgroundColor: "white",
     padding: 10,
@@ -28,27 +21,19 @@ const styles = StyleSheet.create({
     color: "black",
   },
   container: {
-    padding: 20,
-    backgroundColor: "#F9FAFB", // 부드러운 배경색
     flex: 1,
+    padding: 10,
+    backgroundColor: '#fff7f0', // 따뜻한 배경색
   },
   profileImage: {
     width: 130,
     height: 130,
-    borderRadius: 100, // 원형 이미지
-    alignSelf: "center", // 가운데 정렬
-    overflow: "hidden", // 이미지가 테두리를 넘지 않도록 처리
+    borderRadius: 100, 
+    alignSelf: "center", 
+    overflow: "hidden", 
     marginBottom: 20,
   },
-  input: {
-    borderColor: "#D1D5DB", // 부드러운 테두리 색상
-    borderWidth: 1,
-    borderRadius: 8, // 입력 필드 모서리 둥글게
-    marginBottom: 12,
-    padding: 10,
-    backgroundColor: "white", // 입력 필드 배경색
-    fontSize: 16, // 텍스트 크기
-  },
+  
   dateContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -73,8 +58,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     alignSelf: "center",
   },
+
   imagePickerText: {
-    color: "#9CA3AF", // 글씨 색상
+    color: "black", // 글씨 색상
     fontWeight: "bold", // 글씨 굵게
   },
   switchContainer: {
@@ -82,6 +68,18 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 8,
+    
+  },
+  action: {
+    flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: "white",
+      borderBottomWidth: 1,
+      borderBottomColor: "#cccccc",
+      padding: 15,
+      marginHorizontal: 20,
+      borderRadius: 10,
+      marginTop: 10
   },
   multilineInput: {
     borderColor: "#D1D5DB",
@@ -92,10 +90,47 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     textAlignVertical: "top", // 안드로이드에서 멀티라인 정렬
     marginBottom: 12,
-    paddingTop: 0,
-    height: 100, // 높이를 주어 멀티라인 입력 가능하게 함
+    paddingTop: 5,
+    height: 80, // 높이를 주어 멀티라인 입력 가능하게 함
   },
-  // 추가적인 스타일 ...
+  saveButton: {
+    backgroundColor: "blue",
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
+    justifyContent: "center",
+    margin: 20,
+},
+saveButtonText: {
+    color: "white",
+    fontSize: 16,
+},
+input: {
+  borderWidth: 1,
+  borderColor: '#f9d5a7',
+  borderRadius: 10,
+  padding: 10,
+  backgroundColor: '#fffcf7',
+  width: 280, // 칸의 너비를 200픽셀로 고정
+},
+
+
+inputTouchable: {
+  borderWidth: 1,
+  borderColor: '#f9d5a7',
+  borderRadius: 10,
+  padding: 10,
+  backgroundColor: '#fffcf7',
+  width: 280,
+},
+inputText: {
+  color: 'black', // 여기서 색상은 원하는 대로 조정할 수 있습니다.
+},
+
+
 });
+  // 추가적인 스타일 ...
+
 
 export default styles
+

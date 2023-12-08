@@ -4,13 +4,13 @@ import { getFirestore } from "firebase/firestore"; // Firestore 가져오기
 
 // Firebase 웹 앱 구성 설정
 const firebaseConfig = {
-    apiKey: "AIzaSyAuZCe3JQpP8TxHkLdmMxXyGNMOqduo_eU",
-    authDomain: "ckdgmlek-6fbc9.firebaseapp.com",
-    projectId: "ckdgmlek-6fbc9",
-    storageBucket: "ckdgmlek-6fbc9.appspot.com",
-    messagingSenderId: "382977187563",
-    appId: "1:382977187563:web:c453ceedf8cb76732de8ae",
-    measurementId: "G-BX2VZ04KL3"
+  apiKey: "AIzaSyBg_iDUJHUZOI2y6LdXXv_dlH6NSAaV0Hc",
+  authDomain: "pet-meeting-61c0d.firebaseapp.com",
+  projectId: "pet-meeting-61c0d",
+  storageBucket: "pet-meeting-61c0d.appspot.com",
+  messagingSenderId: "1077430799401",
+  appId: "1:1077430799401:web:3c94b23abdafcb8b512038",
+  measurementId: "G-0EXV3RNK4Y"
   };
 
 // 파이어베이스 초기화

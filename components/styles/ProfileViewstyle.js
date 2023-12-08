@@ -3,9 +3,9 @@ import { StyleSheet } from 'react-native';
 // 스타일 정의
 const styles = StyleSheet.create({
   container: {
-      flex: 1,
-      backgroundColor: "#f0f0f0",
-      paddingTop: 50,
+    flex: 1,
+    padding: 10,
+    backgroundColor: '#fff7f0', // 따뜻한 배경색
   },
   imageContainer: {
       justifyContent: "center",
@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
       color: "#666",
   },
   deleteButton: {
-      backgroundColor: "red",
+      backgroundColor: '#f9a1bc',
       padding: 10,
       borderRadius: 5,
       alignItems: "center",
