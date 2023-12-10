@@ -275,7 +275,7 @@ const MeetingWalk = () => {
             // 변경 감지될 때 동작
             setWalkActive(isActive);
             setIsWalking(false);
-            //stopLocationTracking(); // 실시간 위치 추적 중지
+            setMeetingActive(false);
             Toast.show({
                 type: 'info',
                 position: 'bottom',

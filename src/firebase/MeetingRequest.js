@@ -19,11 +19,11 @@ export const sendMeetingRequest = async (fromUserId, toUserId) => {
     await addDoc(meetingRequestsRef, request);
 };
 
-// 만남 요청 감지
+// 만남 요청 감지(수정-처리된 요청 건은 다시 처리하지 않도록)
 // 만약 여러 만남 요청이 짧은 시간 안에 이루어졌다면, 각 요청에 대해 고유한 requestId가 생성됨
 // 콜백 함수가 이를 수신하여 콘솔에 로그 남겨서 콘솔에 여러 개의 다른 requestId가 출력될 수 있음
 export const listenForMeetingRequests = (userId, callback) => {
-    const q = query(meetingRequestsRef, where('toUserId', '==', userId));
+    const q = query(meetingRequestsRef, where('toUserId', '==', userId), where('status', '==', 'pending'));//pending 상태인 요청만 고려
     return onSnapshot(q, (snapshot) => {
         snapshot.docChanges().forEach((change) => {
             if (change.type === 'added') {
@@ -35,6 +35,7 @@ export const listenForMeetingRequests = (userId, callback) => {
     });
 };
 
+
 // 만남 요청 응답 처리
 export const handleMeetingRequestResponse = async (requestId, response) => {
     if (!requestId || !response) {
@@ -45,6 +46,8 @@ export const handleMeetingRequestResponse = async (requestId, response) => {
     try {
         const requestRef = doc(db, "meetingRequests", requestId);
         await updateDoc(requestRef, { status: response });
+        // 추가적으로 요청을 'processed' 상태로 업데이트-이미 처리된 만남 요청은 무시하는 조건
+        await updateDoc(requestRef, { status: 'processed' });
     } catch (error) {
         console.error("Error handling meeting request response: ", error);
     }
