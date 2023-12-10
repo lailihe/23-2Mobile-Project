@@ -1,24 +1,23 @@
+// (녹음 기능 메인 Screen)녹음 기능 구현 코드
 import React, { useState, useEffect } from 'react';
-import { View, Button, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Audio } from 'expo-av';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { getFirestore, collection, addDoc } from 'firebase/firestore';
-import db from '../firebase/firebaseConfig'; // Firestore 인스턴스 임포트
 import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import RecoName from '../components/Dialog/RecoName';
 import RecoList from './RecoList';
 import styles from './RecordingWalkStyles';
 import Icon from 'react-native-vector-icons/Ionicons';
-//import { getFirestore, doc, setDoc } from 'firebase/firestore';
 
 export default function RecordingWalk() {
-    const [recording, setRecording] = useState(null);
-    const [isRecording, setIsRecording] = useState(false);
-    const [showRecoName, setShowRecoName] = useState(false);
-    const [userUUID, setUserUUID] = useState(null);
-    const [recordTime, setRecordTime] = useState('00:00:00');
-    const [recordTimer, setRecordTimer] = useState(null);
+    const [recording, setRecording] = useState(null); // 녹음 객체 상태
+    const [isRecording, setIsRecording] = useState(false); // 녹음 중 여부
+    const [showRecoName, setShowRecoName] = useState(false); // 녹음 이름 지정 모달
+    const [userUUID, setUserUUID] = useState(null); // 사용자 고유 ID
+    const [recordTime, setRecordTime] = useState('00:00:00'); // 녹음 시간
+    const [recordTimer, setRecordTimer] = useState(null); // 녹음 시간 타이머
 
     useEffect(() => {
         // AsyncStorage에서 uniqueId 가져오기
@@ -30,49 +29,50 @@ export default function RecordingWalk() {
         fetchUserUUID();
     }, []);
 
+    // 녹음 시작 함수
     async function startRecording() {
         try {
-            await Audio.requestPermissionsAsync();
-            await Audio.setAudioModeAsync({
+            await Audio.requestPermissionsAsync(); // 녹음 권한 요청
+            await Audio.setAudioModeAsync({ // 오디오 모드 설정
                 allowsRecordingIOS: true,
                 playsInSilentModeIOS: true,
             });
             const { recording } = await Audio.Recording.createAsync(
-               Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY
+               Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY // 고품질 녹음 옵션 설정
             );
-            setRecording(recording);
-            setIsRecording(true);
+            setRecording(recording); // 녹음 객체 상태 업데이트
+            setIsRecording(true); // 녹음 중 상태 설정
 
-             // 타이머 초기화
+            // 녹음 시간 계산을 위한 타이머 설정
             let seconds = 0;
             setRecordTimer(setInterval(() => {
             seconds++;
-            setRecordTime(new Date(seconds * 1000).toISOString().substr(11, 8));
+            setRecordTime(new Date(seconds * 1000).toISOString().substr(11, 8)); // 녹음 시간 업데이트
             }, 1000));
         } catch (err) {
             console.error('Failed to start recording', err);
         }
     }
 
-    // 녹음 중지 및 RecoName 대화상자 표시
+    // 녹음 중지 및 RecoName(이름 지정 모달) 표시
     async function stopRecording() {
         setIsRecording(false);
-        await recording.stopAndUnloadAsync();
-        const uri = recording.getURI();
+        await recording.stopAndUnloadAsync(); // 녹음 중지 및 언로드
+        const uri = recording.getURI(); // 녹음 파일 URI 가져오기
         console.log(`녹음된 파일 URI: ${uri}`); // 파일 URI 출력
-        setShowRecoName(true);
+        setShowRecoName(true); // 녹음 이름 지정 모달 표시
         if (recordTimer) {
-            clearInterval(recordTimer);
+            clearInterval(recordTimer); // 타이머 해제
             setRecordTimer(null);
           }
-          setRecordTime('00:00:00');
+          setRecordTime('00:00:00'); // 녹음 시간 초기화
     }      
 
-    // "저장" 클릭 이벤트 처리
+    // 녹음 저장 처리
     const handleSaveRecording = async (fileName) => {
         const uri = recording.getURI();
-        await uploadAudioToFirebase(uri, fileName); // 파일 이름으로 업로드
-        setShowRecoName(false); // 대화상자 닫기
+        await uploadAudioToFirebase(uri, fileName); // 파일 이름으로 오디오 업로드
+        setShowRecoName(false); // 모달 닫기
         setRecording(null); // 녹음 상태 초기화
         Toast.show({
             type: 'success',
@@ -81,7 +81,7 @@ export default function RecordingWalk() {
         });
     };
 
-    // "취소" 클릭 이벤트 처리
+    // 녹음 취소 처리
     const handleCancelRecording = () => {
         setShowRecoName(false); // 대화상자 닫기
         setRecording(null); // 녹음 상태 초기화
@@ -92,14 +92,13 @@ export default function RecordingWalk() {
         });
     };
 
-
-
+    //오디오 업로드 함수
     async function uploadAudioToFirebase(uri, fileName) {
         const userUUID = await AsyncStorage.getItem("userUUID");
-        const response = await fetch(uri);
-        const blob = await response.blob();
-        const storage = getStorage();
-        const storageRef = ref(storage, `Recordings/${userUUID}/${fileName}`);
+        const response = await fetch(uri); // uri에서 오디오 데이터 가져오기
+        const blob = await response.blob(); // blob 형태로 변환
+        const storage = getStorage(); // firebase storage 객체 가져오기
+        const storageRef = ref(storage, `Recordings/${userUUID}/${fileName}`); // 저장할 경로 설정
     
         Toast.show({
             type: 'info',
@@ -107,14 +106,15 @@ export default function RecordingWalk() {
             text1: '녹음 파일 저장 중..',
         });
     
-        const uploadTask = uploadBytesResumable(storageRef, blob);
+        const uploadTask = uploadBytesResumable(storageRef, blob); // 업로드 작업 생성
     
+        // 업로드 상태 변경 리스너
         uploadTask.on('state_changed', 
             (snapshot) => {
-                // 업로드 상태가 변경될 때마다 호출됩니다.
+                // 업로드 상태가 변경될 때마다 호출
+                // 업로드 진행률 계산 및 로그 출력
                 const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
                 console.log('Upload is ' + progress + '% done');
-                // ...
             },  
             (error) => {
                 console.error('Audio upload error: ', error);
@@ -125,11 +125,13 @@ export default function RecordingWalk() {
                 });
             },
             async () => {
+                // 업로드 완료 처리
                 try {
                     const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
                     console.log('File available at', downloadURL);
     
                     // Firestore에 파일 메타데이터 기록
+                    // 메타데이터: 다른 데이터를 설명하는 데이터
                     const db = getFirestore();
                     await addDoc(collection(db, "recordings"), {
                         userId: userUUID,

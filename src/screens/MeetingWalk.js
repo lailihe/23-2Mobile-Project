@@ -1,7 +1,7 @@
-// 메인 코드: 산책 중 만남을 관리 역할
+// (산책 중 만남 메인 코드)산책 중 만남을 관리 역할
 // 이 코드는 사용자의 위치를 표시하고, 다른 사용자와의 만남 요청 및 응답 관리
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, Animated, Dimensions, Image } from 'react-native';
+import { View, Text, Animated, Dimensions, Image } from 'react-native';
 import MapView, { Marker } from 'react-native-maps'; //  지도 표시 모듈
 import * as Location from 'expo-location'; // 사용자 현재 위치 얻기 위한 모듈
 import styles from './MeetingWalkStyles';
@@ -79,18 +79,16 @@ const MeetingStatusComponent = ({ userId, connectedUserId, animationValue }) => 
 
 // 주요 컴포넌트로 애플리케이션 로직 담당
 const MeetingWalk = () => {
-    // 다양한 상태 관리 위한 useState 훅
     const [currentPosition, setCurrentPosition] = useState(null); // 현재 사용자 위치
     const [errorMsg, setErrorMsg] = useState(null); // 위치 권한 오류 메시지
     const [otherUsersPositions, setOtherUsersPositions] = useState([]); // 다른 사용자의 위치 배열
     const [isWalking, setIsWalking] = useState(false); // 산책 중 여부, 산책 버튼 상태 결정
     const [userId, setUserId] = useState(null); // 사용자 ID 상태
     const [locationSaved, setLocationSaved] = useState(false); // 위치 저장 여부
-    const [meetingActive, setMeetingActive] = useState(false); // 만남 활성화 상태
+    const [meetingActive, setMeetingActive] = useState(false); // (만남을 가지는 사용자의) 만남 활성화 상태
     const [connectedUserId, setConnectedUserId] = useState(null); // 연결된 사용자의 ID
     const [animationValue] = useState(new Animated.Value(0)); // 애니메이션 값
-    // 만남 활성화(시작) 상태 관리 훅 추가
-    const [walkActive, setWalkActive] = useState(null);
+    const [walkActive, setWalkActive] = useState(null); // 산책 시작 활성화 상태 관리
 
     // 만남 상태 표시 애니메이션을 시작하는 함수
     const startAnimation = () => {
@@ -123,7 +121,7 @@ const MeetingWalk = () => {
                 longitudeDelta: 0.005,
             });
 
-             // AsyncStorage에서 uniqueId 가져오기
+            // AsyncStorage에서 uniqueId 가져오기
             const uniqueId = await AsyncStorage.getItem("userUUID");
             if (uniqueId) {
                 // 위치 정보와 함께 uniqueId를 사용하여 위치 저장
@@ -132,11 +130,12 @@ const MeetingWalk = () => {
                 setLocationSaved(true); // 위치 저장 완료 표시
             }
         })();
-    }, [locationSaved]); // 의존성 배열에 locationSaved를 포함시켜 위치 저장 여부가 변경될 때만 이 useEffect가 실행되도록 함
+    }, [locationSaved]); // 위치 저장 여부가 변경될 때만 이 useEffect가 실행되도록 함
 
-    // 만남 요청을 수신하고 처리하는 로직
+
+    // ## 만남 요청을 수신하고 처리하는 로직
     useEffect(() => {
-        if (!userId) return;
+        if (!userId) return; // 사용자 ID 없는 경우 함수 수행 중지
 
         // 만남 요청을 실시간으로 감지하여
         // 만남 요청이 들어오면 콜백 함수 실행
@@ -150,25 +149,16 @@ const MeetingWalk = () => {
                             .then(() => {
                                 console.log("산책 수락");
                                 setMeetingActive(true); // 만남 상태 활성화
-                                setConnectedUserId(request.fromUserId); // 연결된 사용자 ID 업데이트
+                                setConnectedUserId(request.fromUserId); // 연결된 사용자 ID 설정
                                 startAnimation(); // 애니메이션 시작
-                                // 산책 버튼(상태)를 '중지'로 변경
-                                setIsWalking(true);const unsub = getAllUserLocations((users) => {
+                                setIsWalking(true);// 산책 버튼(상태)를 '중지'로 변경
+                                setWalkActive(true); // 만남 상태 활성화
+
+                                // 전체 사용자 위치 정보 실시간으로 받아오고, 상태 업데이트
+                                const unsub = getAllUserLocations((users) => {
                                     // 여기서 users 배열의 각 객체가 userId를 포함하고 있는지 확인하고 다른 사용자의 위치를 업데이트
                                     setOtherUsersPositions(users);
                                 });
-                                setWalkActive(true); // 만남 상태를 활성화로 설정
-
-                                // // 산책 시작 클릭 시 실시간 위치 추적
-                                // startLocationTracking((location) => {
-                                //     // 사용자의 현재 위치를 상태에 저장
-                                //     setCurrentPosition({
-                                //         latitude: location.coords.latitude,
-                                //         longitude: location.coords.longitude,
-                                //         latitudeDelta: 0.005,
-                                //         longitudeDelta: 0.005,
-                                //     });
-                                // });
                             })
                             .catch((error) => console.error("Error accepting request:", error));
                     }, () => {isWalking
@@ -196,7 +186,7 @@ const MeetingWalk = () => {
         // 만남 요청 상태 변경 리스닝: 만남 요청 상태 변경될 때마다 실행
         const unsubscribe = listenToMeetingRequestStatus(userId, (status, toUserId) => {
             if (status === 'accepted' && status !== lastStatus) {
-                // 상태가 'accepted'로 변경되고 이전 상태와 다른 경우에만 수행
+                // 상태가 'accepted'로 변경되고 이전 상태와 다른 경우에만 실행
                 //이미 'accepted' 상태인 만남 요청에 대해서는 대화상자를 표시하지 않도록함
                 lastStatus = status; // 이전 상태 업데이트
                 // 상대방이 만남 요청을 수락한 경우
@@ -213,8 +203,7 @@ const MeetingWalk = () => {
                 getProfileNameById(toUserId).then((toUserName) => {
                     // 거절 대화상자 보여줌
                     MeetingRequestDialogs.showMeetingRejectedDialog(toUserName);
-                    // 만남 상태 false
-                    setMeetingActive(false);
+                    setMeetingActive(false);// 만남 상태 false
                 });
             }
         });
@@ -236,12 +225,12 @@ const MeetingWalk = () => {
         if (!isWalking) {
             // 산책 시작 버튼 클릭 시
             const unsub = getAllUserLocations((users) => {
-                // 여기서 users 배열의 각 객체가 userId를 포함하고 있는지 확인하고 다른 사용자의 위치를 업데이트
+                // 전체 사용자 위치 정보를 받아와서 상태 업데이트
                 setOtherUsersPositions(users);
             });
-            setWalkActive(true); // 상태를 활성화로 설정
+            setWalkActive(true); // 산책 상태 활성화
 
-            // 산책 시작 클릭 시 실시간 위치 추적
+            // 산책 시작 시 실시간 위치 추적 시작
             startLocationTracking((location) => {
                 // 사용자의 현재 위치를 상태에 저장
                 setCurrentPosition({
@@ -254,7 +243,7 @@ const MeetingWalk = () => {
         } else {
             // 산책 중지 로직
             await updateWalkActiveStatus(userId, connectedUserId, false); // 현재 사용자와 연결된 사용자의 walkActive 업데이트
-            setWalkActive(false); // 만남 비활성화
+            setWalkActive(false); // 산책 상태 비활성화
             setMeetingActive(false); // 만남 상태 비활성화
             setOtherUsersPositions([]); // 다른 사용자 위치 초기화
             stopLocationTracking(); // 실시간 위치 추적 중지
@@ -267,15 +256,16 @@ const MeetingWalk = () => {
         }
     };
 
-    // MeetingWalk.js
+    // 다른 사용자와 산책 중일 때의 상태 변경을 감지하는 로직
     useEffect(() => {
-        if (!userId || !connectedUserId) return;
+        if (!userId || !connectedUserId) return; // 사용자 ID 또는 연결된 사용자 ID가 있어야함
 
+        // 산책 활성화 상태를 실시간으로 감지
         const unsubscribe = listenToWalkActive(userId, connectedUserId, (isActive) => {
-            // 변경 감지될 때 동작
-            setWalkActive(isActive);
-            setIsWalking(false);
-            setMeetingActive(false);
+            // 산책 상태가 변경되면 실행
+            setWalkActive(isActive); // 산책 활성화 상태
+            setIsWalking(false); // 산책 중인 상태
+            setMeetingActive(false); // 만남 상태
             Toast.show({
                 type: 'info',
                 position: 'bottom',
@@ -294,6 +284,7 @@ const MeetingWalk = () => {
         const profileInfo = await getProfileInfoById(userPos.userId); // 프로필 정보 조회
 
         if (userName) {
+            // 사용자 이름 존재 경우, 만남 요청 대화상자 표시
             MeetingRequestDialogs.showMeetingRequestDialog(userName, profileInfo, async () => {
                 await sendMeetingRequest(userId, userPos.userId);
             });
@@ -310,6 +301,7 @@ const MeetingWalk = () => {
                 <Text style={styles.title}>산책 중 만남</Text>
             </View>
             <View style={styles.contentContainer}>
+                {/* 현재 위치 정보가 있으면 지도를 표시합니다. */}
                 {currentPosition ? (
                     <MapView style={styles.map} initialRegion={currentPosition}>
                         {/* 내 위치 표시 */}

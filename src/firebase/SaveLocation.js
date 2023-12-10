@@ -1,3 +1,4 @@
+// 사용자 위치 정보 저장
 import { doc, setDoc } from 'firebase/firestore';
 import db from './firebaseConfig';
 

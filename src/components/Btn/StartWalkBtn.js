@@ -3,7 +3,7 @@ import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
 
 const StartWalkBtn = ({ onPress, title }) => {
-    const textStyle = title === '산책 중지'
+    const textStyle = title === '산책 중지' // 받아온 title이 '산책 중지'면
         ? [styles.buttonText, styles.stopButtonText]
         : styles.buttonText;
 

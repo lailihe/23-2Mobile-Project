@@ -119,7 +119,7 @@ export default function TabLayout() {
 <Tabs.Screen
         name="walk2"
         options={{
-          title: '대리 산책',
+          title: '대리 산책 기록',
           tabBarIcon: () => <Entypo name="baidu" size={24} color="pink" />,
           headerStyle: {
             backgroundColor: "#4fc3f7", // 헤더의 배경색

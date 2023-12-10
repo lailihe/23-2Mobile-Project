@@ -1,28 +1,29 @@
-// RecoList.js
+// 녹음 파일 목록 관리 및 재생 화면 구현 코드
 import React, { useEffect, useState } from 'react';
 import { View, Text, Button, ScrollView, RefreshControl, Modal, TouchableOpacity } from 'react-native';
 import { Audio } from 'expo-av';
 import { getFirestore, collection, query, where, getDocs, doc, deleteDoc } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import styles from './RecoListStyles';
-import RecoListItem from '../components//RecoListItem';
+import RecoListItem from '../components//RecoListItem'; // 녹음 파일 목록 아이템 컴포넌트
 import Icon from 'react-native-vector-icons/Ionicons';
-import * as Progress from 'react-native-progress';
+import * as Progress from 'react-native-progress'; // 진행 상태 표시 바
 import db from '../firebase/firebaseConfig';
 import Toast from 'react-native-toast-message';
 
 export default function RecoList() {
-    const [recordings, setRecordings] = useState([]);
-    const [refreshing, setRefreshing] = useState(false);
-    const [playbackInstance, setPlaybackInstance] = useState(null);
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [modalVisible, setModalVisible] = useState(false);
-    const [selectedRecording, setSelectedRecording] = useState(null);
-    const [progress, setProgress] = useState(0);
-    const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-    const [selectedIdForDelete, setSelectedIdForDelete] = useState(null);
+    const [recordings, setRecordings] = useState([]); // 녹음 파일 목록 상태
+    const [refreshing, setRefreshing] = useState(false); // 새로고침 상태
+    const [playbackInstance, setPlaybackInstance] = useState(null); // 오디오 재생 상태
+    const [isPlaying, setIsPlaying] = useState(false); // 재생 여부
+    const [modalVisible, setModalVisible] = useState(false); // 모달 창
+    const [selectedRecording, setSelectedRecording] = useState(null); // 선택된 녹음 파일
+    const [progress, setProgress] = useState(0); // 재생 진행률
+    const [deleteModalVisible, setDeleteModalVisible] = useState(false); // 삭제 확인 모달
+    const [selectedIdForDelete, setSelectedIdForDelete] = useState(null); // 삭제할 녹음 파일 ID
     const [playbackTime, setPlaybackTime] = useState('00:00'); // 초기 재생 시간 상태
 
+    // firestore에서 녹음 파일 데이터 가져오는 함수
     const fetchRecordingsFromFirestore = async () => {
       setRefreshing(true);
       try {
@@ -33,6 +34,7 @@ export default function RecoList() {
           return;
         }
 
+        // firestore에서 사용자 녹음 파일 데이터 조회
         const db = getFirestore();
         const recordingsQuery = query(collection(db, 'recordings'), where('userId', '==', userUUID));
         const querySnapshot = await getDocs(recordingsQuery);
@@ -41,13 +43,13 @@ export default function RecoList() {
           const createdAt = data.createdAt ? new Date(data.createdAt.seconds * 1000) : new Date();
           return {
             id: doc.id,
-            createdAt: createdAt, // Date 객체를 저장합니다.
+            createdAt: createdAt, // Date 객체 저장
             ...data
           };
         });
         
       
-        setRecordings(fetchedRecordings);
+        setRecordings(fetchedRecordings); // 녹음 파일 목록 상태 업데이트
         console.log("성공");
       } catch (error) {
         console.error('Firestore에서 녹음 파일 목록 가져오기 중 오류 발생:', error);
@@ -56,52 +58,58 @@ export default function RecoList() {
       }
     };
 
+    // 오디오 파일 재생 함수
     const playAudio = async (url) => {
       try {
         console.log('재생 시작');
         console.log(`재생할 파일 URL: ${url}`);
     
+        // 오디오 파일 재생을 위한 객체 생성
         const { sound } = await Audio.Sound.createAsync({ uri: url }, { shouldPlay: true });
-        setPlaybackInstance(sound);
-        setIsPlaying(true);
+        setPlaybackInstance(sound); // 재생 객체 상태 업데이트
+        setIsPlaying(true); // 재생 여부
     
+        // 재생 상태 업데이트를 위한 이벤트 리스너
         sound.setOnPlaybackStatusUpdate((status) => {
           if (status.didJustFinish) {
-            stopAudio();
+            stopAudio(); // 재생 끝나면 오디오 정지
           }
         });
-        sound.setOnPlaybackStatusUpdate(updateProgress);
+        sound.setOnPlaybackStatusUpdate(updateProgress); // 진행률 업데이트 함수 호출
       } catch (error) {
         console.error('재생 실패:', error);
         console.log(`재생 실패한 파일 URL: ${url}`);
       }
     };
     
-    
-
+    // 오디오 정지 함수
     const stopAudio = async () => {
       console.log('재생 중지');
       if (playbackInstance) {
         await playbackInstance.stopAsync();
         await playbackInstance.unloadAsync();
-        setPlaybackInstance(null);
+        setPlaybackInstance(null); // 재생 객체 초기화
         setIsPlaying(false);
       }
     };
 
+    // 녹음 파일 아이템 선택 시 호출 함수
     const onItemPress = (recording) => {
-      setSelectedRecording(recording);
-      setModalVisible(true);
+      setSelectedRecording(recording); // 선택된 녹음 파일 상태 업데이트
+      setModalVisible(true); // 모달 창 표시
     };
 
+    // 컴포넌트 연결 시 firestore에서 녹음 파일 데이터 가져옴
     useEffect(() => {
       fetchRecordingsFromFirestore();
     }, []);
 
+    // 새로고침 함수
     const onRefresh = () => {
       fetchRecordingsFromFirestore();
     };
 
+    // firestore timestamp를 지역화된 문자열로
     const formatDate = (timestamp) => {
       if (!timestamp) return '';
 
@@ -130,24 +138,26 @@ export default function RecoList() {
     // 오디오 재생 상태 업데이트 함수
     const updateProgress = (status) => {
       if (status.isPlaying && status.durationMillis > 0) {
-        setProgress(status.positionMillis / status.durationMillis);
-        // 재생 시간을 업데이트합니다. 아래 형식은 mm:ss 형태로 변환하는 한 예입니다.
-        const minutes = Math.floor(status.positionMillis / 60000);
-        const seconds = ((status.positionMillis % 60000) / 1000).toFixed(0);
+        setProgress(status.positionMillis / status.durationMillis); // 진행률 상태 업데이트
+        // 재생 시간을 업데이트. 아래 형식은 mm:ss 형태로 변환.
+        const minutes = Math.floor(status.positionMillis / 60000); // 분 계산
+        const seconds = ((status.positionMillis % 60000) / 1000).toFixed(0); // 초 계산
         setPlaybackTime(
-          `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`
+          `${minutes}:${seconds < 10 ? '0' : ''}${seconds}` // 재생 시간 상태 업데이트
         );
       }
     };    
     
+    // 녹음 파일 삭제 확인 모달
     const showDeleteConfirmation = (id) => {
       setSelectedIdForDelete(id);
       setDeleteModalVisible(true);
     };
 
+    // 녹음 파일 삭제 함수
     const deleteRecording = async (id) => {
       try {
-        await deleteDoc(doc(db, "recordings", id));
+        await deleteDoc(doc(db, "recordings", id)); // 녹음 파일 삭제
         Toast.show({
           type: 'success',
           position: 'bottom',
@@ -174,6 +184,7 @@ export default function RecoList() {
             <RefreshControl refreshing={refreshing} onRefresh={fetchRecordingsFromFirestore} />
           }
         >
+          {/* 녹음 파일 목록 아이템을 반복하여 표시합니다. */}
           {recordings.map((recording) => (
             <RecoListItem
               key={recording.id}
@@ -182,6 +193,8 @@ export default function RecoList() {
               onDelete={showDeleteConfirmation}
             />
           ))}
+
+          {/* 삭제 확인 모달 */}
           <Modal
             visible={deleteModalVisible}
             animationType="slide"
@@ -199,6 +212,7 @@ export default function RecoList() {
           </Modal>
         </ScrollView>
 
+        {/* 오디오 재생 모달 */}
         <Modal
           animationType="slide"
           transparent={true}
@@ -214,6 +228,7 @@ export default function RecoList() {
               <Text style={styles.audioTitle}>{selectedRecording?.fileName}</Text>
               <Text style={styles.audioDate}>{formatDate(selectedRecording?.createdAt)}</Text>
 
+              {/* 진행 상태 표시 바 */}
               <Progress.Bar 
                 progress={progress} 
                 width={200} 
@@ -221,6 +236,7 @@ export default function RecoList() {
               />
               <Text style={styles.playbackTime}>{playbackTime}</Text>
 
+            {/* 재생 컨트롤 버튼 */}
             <View style={styles.controlContainer}>
               {isPlaying ? (
                 <TouchableOpacity style={styles.controlButton} onPress={stopAudio}>
